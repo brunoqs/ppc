@@ -18,14 +18,18 @@ semaforo = Semaphore()
 
 count_cliente = 0
 count_rodada = 0
+count_loop = 0
 
 # fila de renas e elfos que foram executados
 fila_cliente = []
 
 def garcon(id):
-    ''' Funcao sera executada quando 9 threads renas ou 3 threads elfo estiverem prontas,
-    ela para de acordo com os anos setados na entrada no programa '''
+    ''' Funcao sera executada quando n clientes tiverem feito o pedido '''
     while True:
+        if count_loop == n_clientes * qt_rodada:
+            print("Bar fechou")
+            break
+
         semaforo.acquire()
         if len(fila_cliente) == c_garcon or len(fila_cliente) == n_clientes:
             print("Garcon " + str(id) + " buscando pedidos " + str(fila_cliente))
@@ -40,33 +44,40 @@ def garcon(id):
         despertador_garcon[id].wait()
 
 def cliente(id):
-    ''' Funcao acorda a thread papai noel quando 3 threads renas estiverem prontas (da prioridade as renas), ela so ira parar
-    quando as threds renas ja tiverem parado '''
-    global count_cliente
+    ''' Funcao sera executada ate que o numero de rodadas seja atingido, quando n clientes (threads) foram criadas
+        o garcom (thread) sera chamado aleatoriamente '''
+    global count_cliente, count_loop
     while True:
         time.sleep(random.random() * 5)
+        if count_loop == n_clientes * qt_rodada:
+            print("Bar fechou")
+            break
 
-        semaforo.acquire()
-        print("Cliente " + str(id) + ' fez pedido')
-        if count_cliente == c_garcon - 1 or count_cliente + 1 == n_clientes:
-            fila_cliente.append(id)
-            if count_cliente == c_garcon - 1:
-                print("Numero de clientes do garcom atingido.")
-            else:
-                print("Todos os clientes fizeram pedido")
-
-            while True:
-                g = random.randint(0, n_garcons-1)
-                if not despertador_garcon[g].isSet():
-                    despertador_garcon[g].set()
-                    break
-
-            count_cliente = 0
-        
+        if random.randint(0, 3) == 2:
+            print("Cliente " + str(id) + " nao pediu nada")
         else:
-            count_cliente += 1
-            fila_cliente.append(id)
+            semaforo.acquire()
+            print("Cliente " + str(id) + ' fez pedido')
+            if count_cliente == c_garcon - 1 or count_cliente + 1 == n_clientes:
+                fila_cliente.append(id)
+                if count_cliente == c_garcon - 1:
+                    print("Numero de clientes do garcom atingido.")
+                else:
+                    print("Todos os clientes fizeram pedido")
 
+                while True:
+                    g = random.randint(0, n_garcons-1)
+                    if not despertador_garcon[g].isSet():
+                        despertador_garcon[g].set()
+                        break
+
+                count_cliente = 0
+            
+            else:
+                count_cliente += 1
+                fila_cliente.append(id)
+
+        count_loop += 1
         semaforo.release()
 
         despertador_cliente[id].clear()
