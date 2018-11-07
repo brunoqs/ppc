@@ -11,7 +11,7 @@ qt_rodada = int(sys.argv[4])
 
 # eventos que deixarao renas, elfos e noel esperando
 despertador_garcon = []
-despertador_cliente = []
+despertador_cliente = Event()
 
 # semaforo para incremento de renas e elfos
 semaforo = Semaphore()
@@ -25,17 +25,16 @@ fila_cliente = []
 
 def garcon(id):
     ''' Funcao sera executada quando n clientes tiverem feito o pedido '''
+    global count_loop
     while True:
-        if count_loop == n_clientes * qt_rodada:
-            print("Bar fechou")
-            break
-
         semaforo.acquire()
-        if len(fila_cliente) == c_garcon or len(fila_cliente) == n_clientes:
+        if len(fila_cliente) == c_garcon or count_loop == n_clientes:
             print("Garcon " + str(id) + " buscando pedidos " + str(fila_cliente))
-            for i in fila_cliente:
-                despertador_cliente[i].set()
             fila_cliente.clear()
+
+        if count_loop == n_clientes:
+            count_loop = 0
+            despertador_cliente.set()
 
         print("Garcon " + str(id) + " esperando pedido.")
         semaforo.release()
@@ -49,16 +48,13 @@ def cliente(id):
     global count_cliente, count_loop
     while True:
         time.sleep(random.random() * 5)
-        if count_loop == n_clientes * qt_rodada:
-            print("Bar fechou")
-            break
-
+        semaforo.acquire()
+        count_loop += 1
         if random.randint(0, 3) == 2:
             print("Cliente " + str(id) + " nao pediu nada")
         else:
-            semaforo.acquire()
             print("Cliente " + str(id) + ' fez pedido')
-            if count_cliente == c_garcon - 1 or count_cliente + 1 == n_clientes:
+            if count_cliente == c_garcon - 1 or count_loop == n_clientes:
                 fila_cliente.append(id)
                 if count_cliente == c_garcon - 1:
                     print("Numero de clientes do garcom atingido.")
@@ -76,12 +72,10 @@ def cliente(id):
             else:
                 count_cliente += 1
                 fila_cliente.append(id)
-
-        count_loop += 1
         semaforo.release()
 
-        despertador_cliente[id].clear()
-        despertador_cliente[id].wait()
+        despertador_cliente.clear()
+        despertador_cliente.wait()
         print('Cliente ' + str(id) + ' esta consumindo.')
         time.sleep(random.random() * 2)
 
@@ -104,7 +98,6 @@ if __name__ == "__main__":
     clientes = []
     for c in range(n_clientes):
         clientes.append(Thread(target=cliente, args=(c,)))
-        despertador_cliente.append(Event())
 
     for c in range(n_clientes):
         clientes[c].start()
