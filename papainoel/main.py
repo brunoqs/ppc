@@ -4,6 +4,44 @@ import sys
 
 from threading import Thread, Event, Semaphore
 
+import colored.style as s
+import colored.fore as f
+import colored.back as b
+
+BLINK = "\033[5;30m"
+
+
+def printt(text, box=False):
+    if not box:
+        print(text + s.RESET)
+    else:
+        printbox(text)
+
+
+def printbox(msg, cbox=s.RESET + f.WHITE, ctext=s.BOLD + f.WHITE):
+    row = len(msg) + 2
+
+    x = cbox + '+' + s.RESET
+    y = cbox + '-' + s.RESET
+    v = cbox + '|' + s.RESET
+
+    msg = ctext + " " + msg + " " + s.RESET
+
+    h = ''.join([x] + [y * row] + [x])
+    result = h + '\n' + v + msg + v + '\n' + h
+    print("\n" + result + "\n" + s.RESET)
+
+
+def hohoho():
+    print(BLINK + f.RED + " \t" + r"__     _  __ ")
+    print(BLINK + f.RED + " \t" + r"| \__ `\O/  `--  {}    \}    {/")
+    print(BLINK + f.RED + " \t" + r"\    \_(~)/______/=____/=____/=*")
+    print(BLINK + f.RED + " \t" + r" \=======/    //\\  >\/> || \> ")
+    print(BLINK + f.RED + " \t" + r"----`---`---  `` `` ```` `` ``")
+    print(BLINK + f.RED + " \t" + r" * F E L I Z     N A T A L * *")
+    printt("" + s.RESET)
+
+
 n_renas = 9
 n_elfos = 10
 
@@ -25,45 +63,52 @@ count_loop = 0
 fila_rena = []
 fila_elfo = []
 
+
 def noel():
     ''' Funcao sera executada quando 9 threads renas ou 3 threads elfo estiverem prontas,
     ela para de acordo com os anos setados na entrada no programa '''
     while True:
         if len(fila_rena) == 9:
-            print("Papai noel lacou as renas " + str(fila_rena))
+            hohoho()
+            printt(s.BOLD + f.RED + "Papai noel lançou as renas " + f.WHITE + b.ORANGE_4B + str(
+                fila_rena) + b.BLACK + "\n")
+
             despertador_rena.set()
             fila_rena.clear()
+            global count_rena
             count_rena = 0
 
             if count_loop == anos:
-                print("Papai noel dormindo.")
+                printt(f.RED + s.BOLD + "-> Papai noel foi dormir zZz")
                 despertador_elfo.set()
                 break
 
         elif len(fila_elfo) == 3:
-            print("Papai noel reuniu com os elfos " + str(fila_elfo))
+            printt(s.BOLD + f.RED + "Papai noel reuniu com os elfos " + f.WHITE + b.GREEN + str(fila_elfo))
             despertador_elfo.set()
             fila_elfo.clear()
+            global count_elfo
             count_elfo = 0
 
-        print("Papai noel dormindo.")
+        printt(s.BOLD + f.RED + "-> Papai noel foi dormir zZz")
         despertador_noel.clear()
         despertador_noel.wait()
-        print("Papai noel acordado.")
+        printt(s.BOLD + f.RED + "<- Papai noel acordou :D")
+
 
 def rena(id):
-    ''' Funcao acorda a thread papai noel quando 9 threads renas estiverem prontas, ela so ira parar quando 
+    ''' Funcao acorda a thread papai noel quando 9 threads renas estiverem prontas, ela so ira parar quando
     as 9 threads renas forem executadas de acordo com os anos '''
     global count_rena, count_loop
     while True:
         time.sleep(random.random() * 3)
         if count_loop == anos:
             break
-        
+
         semaforo.acquire()
-        print("Rena: " + str(id))
+        printt(f.ORANGE_4B + s.BOLD + "Rena: [ " + s.RESET + f.ORANGE_4B + str(id) + " ]")
         if count_rena == 8:
-            print("9 renas")
+            printbox("9 renas!", cbox=BLINK + f.ORANGE_4B)
             fila_rena.append(id)
             despertador_noel.set()
             count_rena = 0
@@ -76,7 +121,8 @@ def rena(id):
 
         despertador_rena.clear()
         despertador_rena.wait()
-        print('Rena ' + str(id) + ' esta de ferias')
+        printt(s.BOLD + f.ORANGE_4B + 'Rena [ ' + str(id) + ' ] ' + s.RESET + 'está de ferias')
+
 
 def elfo(id):
     ''' Funcao acorda a thread papai noel quando 3 threads renas estiverem prontas (da prioridade as renas), ela so ira parar
@@ -85,15 +131,15 @@ def elfo(id):
     while True:
         time.sleep(random.random() * 3)
         if count_loop == anos:
-            print('Elfo ' + str(id) + ' foi fazer brinquedo')
+            printt(f.GREEN + s.BOLD + 'Elfo ( ' + str(id) + ' ) ' + s.RESET + 'foi fazer brinquedo')
             break
 
         semaforo.acquire()
-        print("Elfo: " + str(id))
+        printt(f.GREEN + s.BOLD + "Elfo: " + s.RESET + f.GREEN + str(id))
         if count_elfo == 2:
             if len(fila_rena) < 9:
                 fila_elfo.append(id)
-                print("3 elfos")
+                printbox("3 elfos!", cbox=BLINK + f.GREEN)
                 despertador_noel.set()
                 count_elfo = 0
         else:
@@ -104,11 +150,14 @@ def elfo(id):
 
         despertador_elfo.clear()
         despertador_elfo.wait()
-        print('Elfo ' + str(id) + ' foi fazer brinquedo')
+
+        printt(f.GREEN + s.BOLD + 'Elfo ( ' + str(id) + ' ) ' + s.RESET + 'foi fazer brinquedo')
+
 
 if __name__ == "__main__":
+
     if len(sys.argv) <= 1:
-        print("Informe o numero de anos")
+        printt("Informe o numero de anos:")
         sys.exit()
 
     anos = anos * int(sys.argv[1])
