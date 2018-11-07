@@ -10,8 +10,8 @@ c_garcon = int(sys.argv[3])
 qt_rodada = int(sys.argv[4])
 
 # eventos que deixarao renas, elfos e noel esperando
-despertador_garcon = []
-despertador_cliente = []
+despertador_garcon = Event()
+despertador_cliente = Event()
 
 # semaforo para incremento de renas e elfos
 semaforo = Semaphore()
@@ -21,21 +21,48 @@ count_rodada = 0
 
 # fila de renas e elfos que foram executados
 fila_cliente = []
+fila_garcon = []
+count_garcon = []
+
+
 
 def garcon(id):
     ''' Funcao sera executada quando 9 threads renas ou 3 threads elfo estiverem prontas,
     ela para de acordo com os anos setados na entrada no programa '''
+    global count_cliente
     while True:
-        if len(fila_cliente) == c_garcon or len(fila_cliente) == n_clientes:
-            print("Garcon " + str(id) + " buscando pedidos " + str(fila_cliente))
-            for i in fila_cliente:
-                despertador_cliente[i].set()
-            fila_cliente.clear()
-            count_elfo = 0
+        if len(fila_cliente) != 0:
+            temp = fila_cliente[-1]
+            if not fila_cliente[-1] == -5:
+                print("Cliente " + str(temp) + ' fez pedido para o garcon ' + str(id))
 
-        print("Garcon " + str(id) + " esperando pedido.")
-        despertador_garcon[id].clear()
-        despertador_garcon[id].wait()
+                count_garcon.append(id)
+
+                if count_garcon.count(id) == c_garcon:
+                    count_garcon.clear()
+                    if not fila_cliente[-1] == -5:
+                        fila_garcon.append(fila_cliente[-1])
+                        fila_cliente[-1] = -5
+                    print("Garcon " + str(id) + " buscando pedidos " + str(fila_garcon))
+                    
+                    
+                    despertador_cliente.set()
+                    fila_cliente.clear()
+                    fila_garcon.clear()
+                    count_cliente = 0
+
+                elif not fila_cliente[-1] == -5:
+                    fila_garcon.append(fila_cliente[-1])
+                    fila_cliente[-1] = -5
+
+
+        
+        else:
+            print("Garcon " + str(id) + " esperando pedido.")
+
+        
+        despertador_garcon.clear()
+        despertador_garcon.wait()
 
 def cliente(id):
     ''' Funcao acorda a thread papai noel quando 3 threads renas estiverem prontas (da prioridade as renas), ela so ira parar
@@ -45,29 +72,21 @@ def cliente(id):
         time.sleep(random.random() * 3)
 
         semaforo.acquire()
-        print("Cliente " + str(id) + ' fez pedido')
-        if count_cliente == c_garcon - 1 or count_cliente + 1 == n_clientes:
-            fila_cliente.append(id)
-            if count_cliente == c_garcon - 1:
-                print("Numero de clientes do garcom atingido.")
-            else:
-                print("Todos os clientes fizeram pedido")
-
-            for d in despertador_garcon:
-                if not d.isSet():
-                    d.set()
-            count_cliente = 0
+        #print("Cliente " + str(id) + ' fez pedido')
         
-        else:
-            count_cliente += 1
-            fila_cliente.append(id)
+        fila_cliente.append(id)
+        count_cliente += 1
+        despertador_garcon.set()
+        
 
         semaforo.release()
 
-        despertador_cliente[id].clear()
-        despertador_cliente[id].wait()
-        print('Cliente ' + str(id) + ' esta consumindo.')
-        time.sleep(random.random() * 2)
+        despertador_cliente.clear()
+        despertador_cliente.wait()
+        print('Cliente ' + str(id) + ' esta bebendo.')
+        x = (int) (random.random() * 5) + 1
+        time.sleep(x)
+        print('Cliente ' + str(id) + ' terminou de beber em ' + str(x) + ' minutos')
 
 
 if __name__ == "__main__":
@@ -79,7 +98,6 @@ if __name__ == "__main__":
     garcons = []
     for g in range(n_garcons):
         garcons.append(Thread(target=garcon, args=(g,)))
-        despertador_garcon.append(Event())
     
     for g in range(n_garcons):
         garcons[g].start()
@@ -88,7 +106,6 @@ if __name__ == "__main__":
     clientes = []
     for c in range(n_clientes):
         clientes.append(Thread(target=cliente, args=(c,)))
-        despertador_cliente.append(Event())
 
     for c in range(n_clientes):
         clientes[c].start()
