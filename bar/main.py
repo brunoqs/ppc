@@ -4,11 +4,6 @@ import sys
 
 from threading import Thread, Event, Semaphore
 
-n_clientes = int(sys.argv[1])
-n_garcons = int(sys.argv[2])
-c_garcon = int(sys.argv[3])
-qt_rodada = int(sys.argv[4])
-
 # eventos que deixarao garcons e clientes esperando
 despertador_garcon = []
 despertador_cliente = Event()
@@ -43,12 +38,12 @@ def garcon(id):
         print("Garcon " + str(id) + " esperando pedido.")
 
         if count_rodada == qt_rodada:
-            print("Bar fechou.")
             break
         semaforo.release()
 
         despertador_garcon[id].clear()
         despertador_garcon[id].wait()
+
 
 def cliente(id):
     ''' Funcao sera executada ate que o numero de rodadas seja atingido, quando n clientes (threads) foram criadas
@@ -60,6 +55,7 @@ def cliente(id):
 
         # Condicao de parada da rodada
         if count_rodada == qt_rodada:
+            print("Bar fechou.")
             break
 
         count_loop += 1
@@ -78,13 +74,13 @@ def cliente(id):
 
                 # random para escolher qual garcom esta livre
                 while True:
-                    g = random.randint(0, n_garcons-1)
+                    g = random.randint(0, n_garcons - 1)
                     if not despertador_garcon[g].isSet():
                         despertador_garcon[g].set()
                         break
 
                 count_cliente = 0
-            
+
             else:
                 count_cliente += 1
                 fila_cliente.append(id)
@@ -98,15 +94,20 @@ def cliente(id):
 
 if __name__ == "__main__":
     if len(sys.argv) <= 4:
-        print("Informe o numero de anos")
+        print("Informe o numero de clientes, número de garçons, capacidade dos garçons e número de rodadas.")
         sys.exit()
+
+    n_clientes = int(sys.argv[1])
+    n_garcons = int(sys.argv[2])
+    c_garcon = int(sys.argv[3])
+    qt_rodada = int(sys.argv[4])
 
     # criando e comecando as threads garcons
     garcons = []
     for g in range(n_garcons):
         garcons.append(Thread(target=garcon, args=(g,)))
         despertador_garcon.append(Event())
-    
+
     for g in range(n_garcons):
         garcons[g].start()
 
