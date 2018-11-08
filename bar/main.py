@@ -90,6 +90,7 @@ def cliente(id):
         despertador_cliente.wait()
         print('Cliente ' + str(id) + ' esta consumindo.')
         time.sleep(random.random() * 2)
+        print('Cliente ' + str(id) + ' consumiu.')
 
 
 if __name__ == "__main__":
